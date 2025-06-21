@@ -1,40 +1,9 @@
-# netlify.toml
+[build.environment]
+  NODE_VERSION = "18.17.0"
+
 [build]
   command = "npm run build"
-  functions = "netlify/functions"
   publish = "build"
 
-[build.environment]
-  NODE_VERSION = "16"
-
-[[redirects]]
-  from = "/api/*"
-  to = "/.netlify/functions/:splat"
-  status = 200
-
-[[headers]]
-  for = "/.netlify/functions/*"
-  [headers.values]
-    Access-Control-Allow-Origin = "*"
-    Access-Control-Allow-Headers = "Content-Type"
-    Access-Control-Allow-Methods = "GET, POST, OPTIONS"
-
-[[headers]]
-  for = "/static/*"
-  [headers.values]
-    Cache-Control = "public, max-age=31536000, immutable"
-
-# Environment variables for production
-[context.production.environment]
-  NODE_ENV = "production"
-  REACT_APP_ENV = "production"
-
-# Environment variables for deploy previews
-[context.deploy-preview.environment]
-  NODE_ENV = "development"
-  REACT_APP_ENV = "preview"
-
-# Functions configuration
 [functions]
-  directory = "netlify/functions/"
-  node_bundler = "esbuild"
+  directory = "netlify/functions"
