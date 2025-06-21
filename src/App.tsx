@@ -1,426 +1,223 @@
 import React, { useState } from 'react';
-import AddressInput from './AddressInput';
-import AirQualityDisplay from './AirQualityDisplay';
-import { dataLoader } from './DataLoader';
-import { 
-  RealHistoricalAnalysis, 
-  RealPollenData, 
-  RealClimateHazards, 
-  RealWaterQuality, 
-  RealToxicFacilities 
-} from './RealComponents';
+import EnvironmentalDataLoader from './components/EnvironmentalDataLoader';
 
-interface LocationData {
+interface Location {
+  lat: number;
+  lng: number;
   address: string;
-  city: string;
-  state: string;
-  zipCode: string;
-  latitude: number;
-  longitude: number;
-  county: string;
+  state?: string;
+  zip?: string;
+  county?: string;
 }
 
-const App: React.FC = () => {
-  const [location, setLocation] = useState<LocationData | null>(null);
-  const [dataLoading, setDataLoading] = useState(false);
-  const [dataLoaded, setDataLoaded] = useState(false);
+function App() {
+  const [location, setLocation] = useState<Location | null>(null);
+  const [isLoading, setIsLoading] = useState(false);
 
-  const handleLocationFound = async (locationData: LocationData) => {
-    setLocation(locationData);
-    
-    // Load data for this state
-    if (locationData.state) {
-      setDataLoading(true);
-      try {
-        await dataLoader.loadDataForState(locationData.state);
-        setDataLoaded(dataLoader.isStateLoaded(locationData.state));
-      } catch (error) {
-        console.error('Error loading state data:', error);
-      } finally {
-        setDataLoading(false);
+  // Test locations for different scenarios
+  const testLocations = [
+    {
+      name: "Baltimore, MD (Industrial Area)",
+      location: {
+        lat: 39.2904,
+        lng: -76.6122,
+        address: "Baltimore, MD",
+        state: "MD",
+        zip: "21201",
+        county: "Baltimore"
+      }
+    },
+    {
+      name: "Catonsville, MD (Your Location)",
+      location: {
+        lat: 39.2723,
+        lng: -76.7322,
+        address: "Catonsville, MD",
+        state: "MD",
+        zip: "21228",
+        county: "Baltimore"
+      }
+    },
+    {
+      name: "Sparrows Point, MD (Heavy Industry)",
+      location: {
+        lat: 39.2137,
+        lng: -76.4951,
+        address: "Sparrows Point, MD",
+        state: "MD",
+        zip: "21219",
+        county: "Baltimore"
+      }
+    },
+    {
+      name: "Bethesda, MD (Clean Area)",
+      location: {
+        lat: 38.9847,
+        lng: -77.0947,
+        address: "Bethesda, MD",
+        state: "MD",
+        zip: "20814",
+        county: "Montgomery"
       }
     }
+  ];
+
+  const handleLocationSelect = (newLocation: Location) => {
+    setIsLoading(true);
+    setLocation(newLocation);
+    // Small delay to show loading state
+    setTimeout(() => setIsLoading(false), 500);
+  };
+
+  const clearLocation = () => {
+    setLocation(null);
+    setIsLoading(false);
   };
 
   return (
-    <div style={{ minHeight: '100vh', backgroundColor: '#f5f5f5', fontFamily: 'Arial, sans-serif' }}>
+    <div className="min-h-screen bg-gray-50">
       {/* Header */}
-      <div style={{ backgroundColor: '#2c3e50', color: 'white', padding: '20px 0', textAlign: 'center', marginBottom: '20px' }}>
-        <h1 style={{ margin: 0, fontSize: '32px', fontWeight: 'bold' }}>
-          🌍 Professional Environmental Assessment Tool
-        </h1>
-        <p style={{ margin: '10px 0 0 0', fontSize: '18px', opacity: 0.9 }}>
-          Real government APIs • EPA, CDC, NOAA, USGS • Phase I ESA compliance
-        </p>
-        
-        <div style={{ marginTop: '15px' }}>
-          {dataLoading ? (
-            <span style={{ backgroundColor: '#f39c12', padding: '5px 15px', borderRadius: '20px', fontSize: '14px', fontWeight: 'bold' }}>
-              🔄 Loading {location?.state} Environmental Data...
-            </span>
-          ) : dataLoaded ? (
-            <span style={{ backgroundColor: '#27ae60', padding: '5px 15px', borderRadius: '20px', fontSize: '14px', fontWeight: 'bold' }}>
-              ✅ {location?.state} Real Data Loaded
-            </span>
-          ) : (
-            <span style={{ backgroundColor: '#3498db', padding: '5px 15px', borderRadius: '20px', fontSize: '14px', fontWeight: 'bold' }}>
-              🎯 Ready - Enter Address for Real-Time Analysis
-            </span>
-          )}
-        </div>
-      </div>
-
-      <div style={{ maxWidth: '1200px', margin: '0 auto', padding: '0 20px' }}>
-        <div style={{ marginBottom: '30px' }}>
-          <AddressInput onLocationFound={handleLocationFound} />
-        </div>
-
-        {location && (
-          <>
-            <div style={{ backgroundColor: 'white', padding: '20px', borderRadius: '5px', marginBottom: '20px', boxShadow: '0 2px 4px rgba(0,0,0,0.1)' }}>
-              <h2 style={{ margin: '0 0 10px 0', color: '#2c3e50' }}>📍 Assessment Location</h2>
-              <p style={{ margin: 0, fontSize: '16px', color: '#555' }}>
-                <strong>{location.address}</strong><br />
-                {location.city}, {location.state} {location.zipCode}<br />
-                <span style={{ fontSize: '14px', color: '#777' }}>
-                  Coordinates: {location.latitude.toFixed(4)}, {location.longitude.toFixed(4)}
-                </span>
+      <header className="bg-white shadow-sm border-b">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+          <div className="flex items-center justify-between">
+            <div>
+              <h1 className="text-3xl font-bold text-gray-900">
+                Environmental Assessment Tool
+              </h1>
+              <p className="text-gray-600 mt-1">
+                Professional Phase I ESA Data & Contamination Analysis
               </p>
             </div>
-
-            {/* Phase I ESA - Historical Analysis */}
-            <div style={{ marginBottom: '30px' }}>
-              <h2 style={{ color: '#2c3e50', borderBottom: '3px solid #3498db', paddingBottom: '10px', marginBottom: '20px' }}>
-                🔍 Phase I Environmental Site Assessment
-              </h2>
-              <RealHistoricalAnalysis 
-                address={location.address}
-                city={location.city}
-                state={location.state}
-                county={location.county}
-                latitude={location.latitude}
-                longitude={location.longitude}
-              />
-            </div>
-
-            {/* Real-Time Environmental Conditions */}
-            <div style={{ marginBottom: '30px' }}>
-              <h2 style={{ color: '#2c3e50', borderBottom: '3px solid #e74c3c', paddingBottom: '10px', marginBottom: '20px' }}>
-                📊 Real-Time Environmental Conditions
-              </h2>
-              
-              {/* Air Quality (Always Available) */}
-              <AirQualityDisplay zipCode={location.zipCode} />
-              
-              {/* Real Pollen Data */}
-              <RealPollenData 
-                latitude={location.latitude}
-                longitude={location.longitude}
-                city={location.city}
-                state={location.state}
-                zipCode={location.zipCode}
-              />
-              
-              {/* Climate Hazards */}
-              <RealClimateHazards 
-                latitude={location.latitude}
-                longitude={location.longitude}
-                city={location.city}
-                state={location.state}
-                zipCode={location.zipCode}
-              />
-            </div>
-
-            {/* Environmental Contamination */}
-            <div style={{ marginBottom: '30px' }}>
-              <h2 style={{ color: '#2c3e50', borderBottom: '3px solid #9b59b6', paddingBottom: '10px', marginBottom: '20px' }}>
-                🏭 Environmental Contamination & Facilities
-              </h2>
-              
-              {/* EPA Violations (from CSV data) */}
-              {dataLoaded && (
-                <RealViolationsComponent latitude={location.latitude} longitude={location.longitude} />
-              )}
-              
-              {/* Toxic Facilities (from TRI + Superfund data) */}
-              {dataLoaded && (
-                <RealToxicFacilities 
-                  latitude={location.latitude}
-                  longitude={location.longitude}
-                  address={location.address}
-                  state={location.state}
-                  zipCode={location.zipCode}
-                />
-              )}
-            </div>
-
-            {/* Health & Water Quality */}
-            <div style={{ marginBottom: '30px' }}>
-              <h2 style={{ color: '#2c3e50', borderBottom: '3px solid #27ae60', paddingBottom: '10px', marginBottom: '20px' }}>
-                🏥 Community Health & Water Quality
-              </h2>
-              
-              {/* CDC Health Data */}
-              {dataLoaded && (
-                <RealHealthDataComponent zipCode={location.zipCode} />
-              )}
-              
-              {/* Water Quality */}
-              <RealWaterQuality 
-                zipCode={location.zipCode}
-                city={location.city}
-                state={location.state}
-                latitude={location.latitude}
-                longitude={location.longitude}
-              />
-            </div>
-
-            {/* Data Summary & Disclaimer */}
-            <div style={{ backgroundColor: '#2c3e50', color: 'white', padding: '20px', borderRadius: '5px', marginBottom: '20px' }}>
-              <h3 style={{ margin: '0 0 15px 0' }}>📋 Real Data Sources Summary</h3>
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))', gap: '15px', marginBottom: '20px' }}>
-                <div>
-                  <h4 style={{ margin: '0 0 10px 0', color: '#3498db' }}>✅ Real-Time APIs</h4>
-                  <ul style={{ margin: 0, fontSize: '14px', listStyle: 'none', padding: 0 }}>
-                    <li>• EPA AirNow - Live air quality</li>
-                    <li>• NOAA Weather - Real climate data</li>
-                    <li>• IQAir - Live pollen & air quality</li>
-                    <li>• EPA SDWIS - Water system data</li>
-                    <li>• USGS Historical Maps</li>
-                    <li>• EPA CERCLIS - Contaminated sites</li>
-                  </ul>
-                </div>
-                <div>
-                  <h4 style={{ margin: '0 0 10px 0', color: '#27ae60' }}>✅ Government Databases</h4>
-                  <ul style={{ margin: 0, fontSize: '14px', listStyle: 'none', padding: 0 }}>
-                    <li>• EPA ECHO - Violations & enforcement</li>
-                    <li>• EPA TRI - Toxic release inventory</li>
-                    <li>• EPA Superfund - Contaminated sites</li>
-                    <li>• CDC PLACES - Health outcomes</li>
-                    <li>• EPA FRS - Facility registry</li>
-                  </ul>
-                </div>
-              </div>
-              
-              <div style={{ backgroundColor: 'rgba(255,255,255,0.1)', padding: '15px', borderRadius: '5px' }}>
-                <h4 style={{ margin: '0 0 10px 0' }}>⚠️ Professional Disclaimer</h4>
-                <p style={{ margin: 0, fontSize: '14px', lineHeight: '1.5' }}>
-                  This assessment provides environmental information for screening purposes only using real government data from EPA, CDC, NOAA, and USGS. 
-                  For legal, financial, or regulatory decisions, consult a qualified environmental professional. Data sources are updated regularly 
-                  but may not reflect the most current conditions. This tool follows ASTM E1527-13 methodology where applicable.
-                </p>
+            <div className="text-right">
+              <div className="text-sm text-gray-500">API Testing Version</div>
+              <div className="text-lg font-semibold text-green-600">
+                Real EPA Data
               </div>
             </div>
-          </>
+          </div>
+        </div>
+      </header>
+
+      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        {/* Location Selection */}
+        {!location && (
+          <div className="bg-white rounded-lg shadow-lg p-8 mb-8">
+            <h2 className="text-2xl font-bold text-gray-900 mb-6">
+              Select Test Location
+            </h2>
+            <p className="text-gray-600 mb-6">
+              Choose a location to test the EPA API integration and see real environmental contamination data.
+            </p>
+            
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {testLocations.map((test, index) => (
+                <button
+                  key={index}
+                  onClick={() => handleLocationSelect(test.location)}
+                  className="p-4 border-2 border-gray-200 rounded-lg hover:border-blue-500 hover:bg-blue-50 transition-colors text-left"
+                  disabled={isLoading}
+                >
+                  <div className="font-semibold text-gray-900">{test.name}</div>
+                  <div className="text-sm text-gray-600">{test.location.address}</div>
+                  <div className="text-xs text-gray-500 mt-1">
+                    Lat: {test.location.lat}, Lng: {test.location.lng}
+                  </div>
+                </button>
+              ))}
+            </div>
+
+            <div className="mt-8 p-4 bg-blue-50 border border-blue-200 rounded-lg">
+              <h3 className="font-semibold text-blue-900 mb-2">Real EPA Data Sources:</h3>
+              <ul className="text-sm text-blue-800 space-y-1">
+                <li>• <strong>SEMS:</strong> Superfund contaminated sites</li>
+                <li>• <strong>TRI:</strong> Toxic Release Inventory facilities</li>
+                <li>• <strong>RCRA:</strong> Hazardous waste handlers</li>
+                <li>• <strong>SDWIS:</strong> Drinking water quality violations</li>
+                <li>• <strong>ECHO:</strong> Compliance and enforcement data</li>
+              </ul>
+            </div>
+          </div>
         )}
-      </div>
-    </div>
-  );
-};
 
-// EPA Violations Component (Real CSV Data)
-const RealViolationsComponent: React.FC<{ latitude: number; longitude: number }> = ({ latitude, longitude }) => {
-  const [violations, setViolations] = React.useState<any[]>([]);
-  const [loading, setLoading] = React.useState(true);
-
-  React.useEffect(() => {
-    const loadViolations = () => {
-      setLoading(true);
-      try {
-        const facilities = dataLoader.getViolationFacilities(latitude, longitude, 5);
-        setViolations(facilities);
-      } catch (error) {
-        console.error('Error loading violations:', error);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    loadViolations();
-  }, [latitude, longitude]);
-
-  if (loading) {
-    return (
-      <div style={{ backgroundColor: 'white', padding: '20px', borderRadius: '5px', boxShadow: '0 2px 4px rgba(0,0,0,0.1)', marginBottom: '20px' }}>
-        <p>🔄 Loading EPA violation data...</p>
-      </div>
-    );
-  }
-
-  return (
-    <div style={{ backgroundColor: 'white', padding: '20px', borderRadius: '5px', boxShadow: '0 2px 4px rgba(0,0,0,0.1)', marginBottom: '20px' }}>
-      <h3 style={{ margin: '0 0 15px 0', color: '#2c3e50' }}>
-        🚨 EPA Enforcement & Violations
-      </h3>
-      <p style={{ fontSize: '14px', color: '#666', marginBottom: '15px' }}>
-        <strong>Data Source:</strong> EPA ECHO Database • Search Radius: 5 miles • Found: {violations.length} facilities with violations
-      </p>
-
-      {violations.length === 0 ? (
-        <div style={{ backgroundColor: '#d4edda', border: '1px solid #c3e6cb', borderRadius: '5px', padding: '15px' }}>
-          <h4 style={{ margin: '0 0 10px 0', color: '#155724' }}>✅ No Recent Violations Found</h4>
-          <p style={{ margin: 0, color: '#155724' }}>
-            No EPA facilities with recent violations found within 5 miles of this location.
-            This indicates good regulatory compliance in the immediate area.
-          </p>
-        </div>
-      ) : (
-        <div>
-          {violations.slice(0, 10).map((facility, index) => (
-            <div key={index} style={{ backgroundColor: '#f8f9fa', border: '1px solid #dee2e6', borderRadius: '5px', padding: '15px', marginBottom: '10px' }}>
-              <h4 style={{ margin: '0 0 10px 0', color: '#2c3e50' }}>
-                {facility.FAC_NAME || 'Unnamed Facility'}
-              </h4>
-              <p style={{ margin: '0 0 5px 0', fontSize: '14px', color: '#666' }}>
-                📍 {facility.FAC_STREET}, {facility.FAC_CITY}, {facility.FAC_STATE} {facility.FAC_ZIP}
-              </p>
-              <div style={{ fontSize: '14px', color: '#666' }}>
-                {facility.CWA_VIOL_QTRS > 0 && (
-                  <span style={{ backgroundColor: '#ffc107', padding: '2px 8px', borderRadius: '3px', marginRight: '5px', color: 'black' }}>
-                    Water Violations: {facility.CWA_VIOL_QTRS} quarters
-                  </span>
-                )}
-                {facility.CAA_VIOL_QTRS > 0 && (
-                  <span style={{ backgroundColor: '#dc3545', padding: '2px 8px', borderRadius: '3px', marginRight: '5px', color: 'white' }}>
-                    Air Violations: {facility.CAA_VIOL_QTRS} quarters
-                  </span>
-                )}
-                {facility.RCRA_VIOL_QTRS > 0 && (
-                  <span style={{ backgroundColor: '#6f42c1', padding: '2px 8px', borderRadius: '3px', marginRight: '5px', color: 'white' }}>
-                    Waste Violations: {facility.RCRA_VIOL_QTRS} quarters
-                  </span>
-                )}
-              </div>
+        {/* Loading State */}
+        {isLoading && (
+          <div className="bg-white rounded-lg shadow-lg p-8 mb-8">
+            <div className="flex items-center justify-center">
+              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mr-3"></div>
+              <span className="text-gray-600">Initializing environmental data loader...</span>
             </div>
-          ))}
-        </div>
-      )}
-    </div>
-  );
-};
+          </div>
+        )}
 
-// CDC Health Data Component (Real CSV Data)
-const RealHealthDataComponent: React.FC<{ zipCode: string }> = ({ zipCode }) => {
-  const [healthData, setHealthData] = React.useState<any>(null);
-  const [loading, setLoading] = React.useState(true);
+        {/* Selected Location Display */}
+        {location && !isLoading && (
+          <div className="bg-white rounded-lg shadow-lg p-6 mb-8">
+            <div className="flex items-center justify-between">
+              <div>
+                <h2 className="text-xl font-bold text-gray-900">
+                  Environmental Assessment: {location.address}
+                </h2>
+                <p className="text-gray-600">
+                  Coordinates: {location.lat}, {location.lng} | 
+                  State: {location.state} | 
+                  ZIP: {location.zip} | 
+                  County: {location.county}
+                </p>
+              </div>
+              <button
+                onClick={clearLocation}
+                className="px-4 py-2 bg-gray-100 hover:bg-gray-200 rounded-lg text-gray-700 transition-colors"
+              >
+                Select Different Location
+              </button>
+            </div>
+          </div>
+        )}
 
-  React.useEffect(() => {
-    const loadHealthData = () => {
-      setLoading(true);
-      try {
-        const data = dataLoader.getHealthDataByZip(zipCode);
-        setHealthData(data);
-      } catch (error) {
-        console.error('Error loading health data:', error);
-      } finally {
-        setLoading(false);
-      }
-    };
+        {/* Environmental Data Component */}
+        {location && !isLoading && (
+          <EnvironmentalDataLoader location={location} />
+        )}
 
-    loadHealthData();
-  }, [zipCode]);
-
-  if (loading) {
-    return (
-      <div style={{ backgroundColor: 'white', padding: '20px', borderRadius: '5px', boxShadow: '0 2px 4px rgba(0,0,0,0.1)', marginBottom: '20px' }}>
-        <p>🔄 Loading CDC health data...</p>
-      </div>
-    );
-  }
-
-  return (
-    <div style={{ backgroundColor: 'white', padding: '20px', borderRadius: '5px', boxShadow: '0 2px 4px rgba(0,0,0,0.1)', marginBottom: '20px' }}>
-      <h3 style={{ margin: '0 0 15px 0', color: '#2c3e50' }}>
-        🏥 Community Health Data
-      </h3>
-      <p style={{ fontSize: '14px', color: '#666', marginBottom: '15px' }}>
-        <strong>Data Source:</strong> CDC PLACES 2024 • ZIP Code: {zipCode}
-      </p>
-
-      {!healthData ? (
-        <div style={{ backgroundColor: '#fff3cd', border: '1px solid #ffeaa7', borderRadius: '5px', padding: '15px' }}>
-          <h4 style={{ margin: '0 0 10px 0', color: '#856404' }}>ℹ️ Health Data Not Available</h4>
-          <p style={{ margin: 0, color: '#856404' }}>
-            No CDC PLACES data found for ZIP code {zipCode}. This may be due to:
-          </p>
-          <ul style={{ marginTop: '10px', color: '#856404' }}>
-            <li>ZIP code not in 2024 dataset</li>
-            <li>Data suppressed for privacy (small population)</li>
-            <li>Non-residential ZIP code</li>
-          </ul>
-        </div>
-      ) : (
-        <div>
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '15px', marginBottom: '20px' }}>
-            {healthData.ASTHMA_CrudePrev && (
-              <div style={{ backgroundColor: '#fff3cd', padding: '15px', borderRadius: '5px', textAlign: 'center' }}>
-                <h4 style={{ margin: '0 0 5px 0', color: '#2c3e50' }}>🫁 Asthma</h4>
-                <p style={{ margin: 0, fontSize: '18px', fontWeight: 'bold', color: '#e74c3c' }}>
-                  {healthData.ASTHMA_CrudePrev.toFixed(1)}%
-                </p>
-                <p style={{ margin: 0, fontSize: '12px', color: '#666' }}>Age-adjusted prevalence</p>
-              </div>
-            )}
-            {healthData.DIABETES_CrudePrev && (
-              <div style={{ backgroundColor: '#e3f2fd', padding: '15px', borderRadius: '5px', textAlign: 'center' }}>
-                <h4 style={{ margin: '0 0 5px 0', color: '#2c3e50' }}>🩺 Diabetes</h4>
-                <p style={{ margin: 0, fontSize: '18px', fontWeight: 'bold', color: '#e74c3c' }}>
-                  {healthData.DIABETES_CrudePrev.toFixed(1)}%
-                </p>
-                <p style={{ margin: 0, fontSize: '12px', color: '#666' }}>Age-adjusted prevalence</p>
-              </div>
-            )}
-            {healthData.OBESITY_CrudePrev && (
-              <div style={{ backgroundColor: '#fce4ec', padding: '15px', borderRadius: '5px', textAlign: 'center' }}>
-                <h4 style={{ margin: '0 0 5px 0', color: '#2c3e50' }}>⚖️ Obesity</h4>
-                <p style={{ margin: 0, fontSize: '18px', fontWeight: 'bold', color: '#e74c3c' }}>
-                  {healthData.OBESITY_CrudePrev.toFixed(1)}%
-                </p>
-                <p style={{ margin: 0, fontSize: '12px', color: '#666' }}>Age-adjusted prevalence</p>
-              </div>
-            )}
-            {healthData.CANCER_CrudePrev && (
-              <div style={{ backgroundColor: '#f3e5f5', padding: '15px', borderRadius: '5px', textAlign: 'center' }}>
-                <h4 style={{ margin: '0 0 5px 0', color: '#2c3e50' }}>🎗️ Cancer</h4>
-                <p style={{ margin: 0, fontSize: '18px', fontWeight: 'bold', color: '#e74c3c' }}>
-                  {healthData.CANCER_CrudePrev.toFixed(1)}%
-                </p>
-                <p style={{ margin: 0, fontSize: '12px', color: '#666' }}>Age-adjusted prevalence</p>
-              </div>
-            )}
-            {healthData.COPD_CrudePrev && (
-              <div style={{ backgroundColor: '#e8f5e8', padding: '15px', borderRadius: '5px', textAlign: 'center' }}>
-                <h4 style={{ margin: '0 0 5px 0', color: '#2c3e50' }}>🫁 COPD</h4>
-                <p style={{ margin: 0, fontSize: '18px', fontWeight: 'bold', color: '#e74c3c' }}>
-                  {healthData.COPD_CrudePrev.toFixed(1)}%
-                </p>
-                <p style={{ margin: 0, fontSize: '12px', color: '#666' }}>Age-adjusted prevalence</p>
-              </div>
-            )}
-            {healthData.STROKE_CrudePrev && (
-              <div style={{ backgroundColor: '#ffebee', padding: '15px', borderRadius: '5px', textAlign: 'center' }}>
-                <h4 style={{ margin: '0 0 5px 0', color: '#2c3e50' }}>🧠 Stroke</h4>
-                <p style={{ margin: 0, fontSize: '18px', fontWeight: 'bold', color: '#e74c3c' }}>
-                  {healthData.STROKE_CrudePrev.toFixed(1)}%
-                </p>
-                <p style={{ margin: 0, fontSize: '12px', color: '#666' }}>Age-adjusted prevalence</p>
-              </div>
-            )}
+        {/* API Status Indicator */}
+        <div className="mt-8 bg-white rounded-lg shadow-lg p-6">
+          <h3 className="text-lg font-bold text-gray-900 mb-4">API Integration Status</h3>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div className="p-4 bg-green-50 border border-green-200 rounded-lg">
+              <div className="font-semibold text-green-800">FRS APIs</div>
+              <div className="text-sm text-green-600">Superfund, RCRA, TRI</div>
+            </div>
+            <div className="p-4 bg-green-50 border border-green-200 rounded-lg">
+              <div className="font-semibold text-green-800">ECHO APIs</div>
+              <div className="text-sm text-green-600">Water, Air, Compliance</div>
+            </div>
+            <div className="p-4 bg-green-50 border border-green-200 rounded-lg">
+              <div className="font-semibold text-green-800">Envirofacts APIs</div>
+              <div className="text-sm text-green-600">Direct DB Access</div>
+            </div>
           </div>
           
-          <div style={{ backgroundColor: '#f8f9fa', padding: '15px', borderRadius: '5px' }}>
-            <h4 style={{ margin: '0 0 10px 0' }}>📊 Data Details</h4>
-            <p style={{ margin: 0, fontSize: '14px', color: '#666' }}>
-              <strong>Source:</strong> CDC PLACES Local Data for Better Health<br />
-              <strong>Year:</strong> 2024 Release<br />
-              <strong>Type:</strong> Age-adjusted prevalence rates<br />
-              <strong>Note:</strong> Rates are per 100 adults and age-adjusted to 2000 US standard population
-            </p>
+          <div className="mt-4 p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
+            <div className="text-sm text-yellow-800">
+              <strong>Testing Mode:</strong> This deployment tests real EPA API endpoints through Netlify Functions to bypass CORS restrictions. 
+              All data returned is live from official EPA databases.
+            </div>
           </div>
         </div>
-      )}
+
+        {/* Footer */}
+        <footer className="mt-12 text-center text-gray-500 text-sm">
+          <p>
+            Environmental Assessment Tool • Real EPA Data • 
+            Professional Phase I ESA Analysis • Last Updated: {new Date().toLocaleDateString()}
+          </p>
+          <p className="mt-2">
+            Data Sources: EPA FRS, ECHO, Envirofacts, SEMS, TRI, RCRA, SDWIS
+          </p>
+        </footer>
+      </main>
     </div>
   );
-};
+}
 
 export default App;
