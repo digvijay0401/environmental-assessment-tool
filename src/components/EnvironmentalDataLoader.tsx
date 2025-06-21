@@ -1,7 +1,6 @@
-
-import { AlertTriangle, CheckCircle, Clock, MapPin, Factory, Droplets } from 'lucide-react';
 import React, { useState, useEffect, useCallback } from 'react';
-// ... other imports ...
+import { AlertTriangle, CheckCircle, Clock, MapPin, Factory, Droplets } from 'lucide-react';
+
 interface Location {
   lat: number;
   lng: number;
@@ -22,8 +21,6 @@ interface EnvironmentalData {
 interface EnvironmentalDataLoaderProps {
   location: Location;
 }
-
-
 
 const EnvironmentalDataLoader: React.FC<EnvironmentalDataLoaderProps> = ({ location }) => {
   const [data, setData] = useState<EnvironmentalData>({
@@ -69,50 +66,11 @@ const EnvironmentalDataLoader: React.FC<EnvironmentalDataLoaderProps> = ({ locat
         errors: [`API Error: ${error instanceof Error ? error.message : 'Unknown error'}`]
       });
     }
-  }, [location.lat, location.lng]);  // ← Dependencies for useCallback
+  }, [location.lat, location.lng]);
 
   useEffect(() => {
     loadEnvironmentalData();
-  }, [loadEnvironmentalData]);  // ← Now this dependency is stable
-
-  // ... rest of component stays the same ...
-
-  const loadEnvironmentalData = async () => {
-    setData(prev => ({ ...prev, loading: true, errors: [] }));
-    
-    try {
-      console.log('🔄 Loading EPA data for:', location);
-      
-      // Test the Netlify Function
-      const response = await fetch(`/.netlify/functions/epa-api?endpoint=test&lat=${location.lat}&lon=${location.lng}`);
-      console.log('📊 API Response status:', response.status);
-      
-      if (response.ok) {
-        const result = await response.json();
-        console.log('✅ EPA API working:', result);
-        
-        setData({
-          superfundSites: result.superfundSites || [],
-          triSites: result.triSites || [],
-          waterViolations: result.waterViolations || [],
-          loading: false,
-          errors: []
-        });
-      } else {
-        throw new Error(`API returned ${response.status}`);
-      }
-      
-    } catch (error) {
-      console.error('❌ EPA API Error:', error);
-      setData({
-        superfundSites: [],
-        triSites: [],
-        waterViolations: [],
-        loading: false,
-        errors: [`API Error: ${error instanceof Error ? error.message : 'Unknown error'}`]
-      });
-    }
-  };
+  }, [loadEnvironmentalData]);
 
   if (data.loading) {
     return (
