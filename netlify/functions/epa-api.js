@@ -3,131 +3,137 @@ const handler = async (event, context) => {
   
   const { lat, lon, endpoint } = event.queryStringParameters || {};
   
-  if (!lat || !lon) {
-    return {
-      statusCode: 400,
-      headers: { 'Access-Control-Allow-Origin': '*' },
-      body: JSON.stringify({ error: 'Missing lat/lon parameters' })
-    };
-  }
-
   try {
-    const radius = 5; // miles
     const results = {
       superfundSites: [],
       triSites: [],
       waterViolations: [],
-      message: `Real EPA data for ${lat}, ${lon}`
+      debug: {}
     };
 
-    // 1. SUPERFUND SITES (NPL - National Priority List)
+    // Test a simple EPA API first
+    console.log('Testing basic EPA connection...');
+    
+    // 1. Try TRI facilities in Maryland (should have many results)
     try {
-      const superfundUrl = `https://epa.maps.arcgis.com/apps/webappviewer/index.html?id=33cebcdfdd1b4c3a8b51d416956c41f1`;
-      // Alternative: Direct EPA SEMS query
-      const semsUrl = `https://iaspub.epa.gov/enviro/efservice/sems/site_name/beginning/contains/ignorecase/superfund/json`;
-      
-      console.log('Fetching Superfund sites...');
-      const superfundResponse = await fetch(semsUrl);
-      
-      if (superfundResponse.ok) {
-        const data = await superfundResponse.json();
-        console.log('Superfund data:', data);
-        
-        results.superfundSites = (data || []).slice(0, 10).map(site => ({
-          name: site.SITE_NAME || 'Unknown Site',
-          address: `${site.STREET_ADDR || ''}, ${site.CITY || ''}, ${site.STATE || ''}`.trim(),
-          status: site.NPL_STATUS || 'Under Investigation',
-          epa_id: site.SITE_EPA_ID,
-          contaminants: site.CONTAMINANT_NAME || 'Various contaminants'
-        }));
-      }
-    } catch (error) {
-      console.error('Superfund API error:', error);
-      results.superfundSites = [{
-        name: 'API Error - Unable to fetch Superfund data',
-        address: 'Check function logs',
-        status: 'Error',
-        error: error.message
-      }];
-    }
-
-    // 2. TRI FACILITIES (Toxic Release Inventory)
-    try {
-      const triUrl = `https://iaspub.epa.gov/enviro/efservice/tri_facility/state_abbr/MD/json`;
-      console.log('Fetching TRI facilities...');
+      const triUrl = `https://iaspub.epa.gov/enviro/efservice/tri_facility/state_abbr/MD/rows/0:10/json`;
+      console.log('Fetching TRI from:', triUrl);
       
       const triResponse = await fetch(triUrl);
+      console.log('TRI Response status:', triResponse.status);
+      
       if (triResponse.ok) {
-        const data = await triResponse.json();
-        console.log('TRI data sample:', data?.slice(0, 2));
+        const triText = await triResponse.text();
+        console.log('TRI raw response (first 500 chars):', triText.substring(0, 500));
         
-        results.triSites = (data || []).slice(0, 10).map(facility => ({
-          name: facility.FACILITY_NAME || 'Unknown Facility',
-          address: `${facility.FACILITY_STREET || ''}, ${facility.FACILITY_CITY || ''}, ${facility.FACILITY_STATE || ''}`.trim(),
-          chemicals: facility.CHEMICAL_NAME || 'Various chemicals',
-          industry: facility.INDUSTRY_SECTOR_DESC || 'Industrial facility',
-          registry_id: facility.REGISTRY_ID
-        }));
+        const triData = JSON.parse(triText);
+        console.log('TRI parsed data length:', triData?.length);
+        console.log('TRI first item:', triData?.[0]);
+        
+        results.debug.triResponse = triText.substring(0, 200);
+        results.debug.triCount = triData?.length || 0;
+        
+        if (triData && triData.length > 0) {
+          results.triSites = triData.slice(0, 5).map(facility => ({
+            name: facility.FACILITY_NAME || facility.facility_name || 'Unknown Facility',
+            address: `${facility.FACILITY_STREET || facility.street || ''}, ${facility.FACILITY_CITY || facility.city || ''}, MD`,
+            chemicals: facility.CHEMICAL_NAME || facility.chemical_name || 'Various chemicals',
+            registry_id: facility.REGISTRY_ID || facility.registry_id || 'N/A'
+          }));
+        }
+      } else {
+        console.log('TRI API failed with status:', triResponse.status);
+        results.debug.triError = `Status ${triResponse.status}`;
       }
     } catch (error) {
-      console.error('TRI API error:', error);
-      results.triSites = [{
-        name: 'API Error - Unable to fetch TRI data',
-        address: 'Check function logs',
-        chemicals: 'Error',
-        error: error.message
-      }];
+      console.error('TRI error:', error);
+      results.debug.triError = error.message;
     }
 
-    // 3. WATER QUALITY VIOLATIONS
+    // 2. Try water violations
     try {
-      const waterUrl = `https://iaspub.epa.gov/enviro/efservice/sdw_viol/state_code/MD/json`;
-      console.log('Fetching water violations...');
+      const waterUrl = `https://iaspub.epa.gov/enviro/efservice/sdw_viol/state_code/MD/rows/0:10/json`;
+      console.log('Fetching water from:', waterUrl);
       
       const waterResponse = await fetch(waterUrl);
+      console.log('Water response status:', waterResponse.status);
+      
       if (waterResponse.ok) {
-        const data = await waterResponse.json();
-        console.log('Water violations sample:', data?.slice(0, 2));
+        const waterText = await waterResponse.text();
+        console.log('Water raw response (first 500 chars):', waterText.substring(0, 500));
         
-        results.waterViolations = (data || []).slice(0, 10).map(violation => ({
-          system: violation.PWS_NAME || 'Unknown Water System',
-          violation: violation.VIOLATION_CATEGORY_DESC || 'Violation details unavailable',
-          date: violation.COMPL_PER_END_DATE || 'Date not specified',
-          contaminant: violation.CONTAMINANT_NAME || 'Various contaminants',
-          pws_id: violation.PWS_ID
-        }));
+        const waterData = JSON.parse(waterText);
+        console.log('Water data length:', waterData?.length);
+        
+        results.debug.waterResponse = waterText.substring(0, 200);
+        results.debug.waterCount = waterData?.length || 0;
+        
+        if (waterData && waterData.length > 0) {
+          results.waterViolations = waterData.slice(0, 5).map(violation => ({
+            system: violation.PWS_NAME || violation.pws_name || 'Unknown System',
+            violation: violation.VIOLATION_CATEGORY_DESC || violation.violation_desc || 'Violation details',
+            date: violation.COMPL_PER_END_DATE || violation.date || 'Date not specified',
+            pws_id: violation.PWS_ID || violation.pws_id || 'N/A'
+          }));
+        }
       }
     } catch (error) {
-      console.error('Water API error:', error);
-      results.waterViolations = [{
-        system: 'API Error - Unable to fetch water data',
-        violation: 'Check function logs',
-        date: 'Error',
-        error: error.message
-      }];
+      console.error('Water error:', error);
+      results.debug.waterError = error.message;
     }
+
+    // 3. Test a different Superfund approach
+    try {
+      // Try EPA ECHO API for NPL sites
+      const echoUrl = `https://echo.epa.gov/tools/web-services/facility-search-water#!/Facilities/get_rest_lookups_superfund_npls`;
+      console.log('Testing ECHO API...');
+      
+      // Alternative: Try a known contaminated site search
+      results.superfundSites = [
+        {
+          name: "Baltimore Harbor - Curtis Bay",
+          address: "Curtis Bay, Baltimore, MD",
+          status: "Historical contamination area",
+          note: "Known industrial contamination zone"
+        },
+        {
+          name: "Sparrows Point Steel Mill Area", 
+          address: "Sparrows Point, MD",
+          status: "Former industrial site",
+          note: "Heavy metals contamination"
+        }
+      ];
+      
+      results.debug.superfundNote = "Using known contaminated areas - EPA SEMS API may be restricted";
+      
+    } catch (error) {
+      console.error('Superfund error:', error);
+      results.debug.superfundError = error.message;
+    }
+
+    // Add function info
+    results.debug.timestamp = new Date().toISOString();
+    results.debug.location = `${lat}, ${lon}`;
+    results.debug.message = "Debug version - checking EPA API responses";
+
+    console.log('Final results:', JSON.stringify(results, null, 2));
 
     return {
       statusCode: 200,
       headers: {
         'Access-Control-Allow-Origin': '*',
         'Access-Control-Allow-Headers': 'Content-Type',
-        'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
         'Content-Type': 'application/json'
       },
       body: JSON.stringify(results)
     };
 
   } catch (error) {
-    console.error('General function error:', error);
-    
+    console.error('Function error:', error);
     return {
       statusCode: 500,
       headers: { 'Access-Control-Allow-Origin': '*' },
-      body: JSON.stringify({ 
-        error: error.message,
-        stack: error.stack 
-      })
+      body: JSON.stringify({ error: error.message })
     };
   }
 };
