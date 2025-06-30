@@ -292,10 +292,10 @@ const EnvironmentalDataLoader: React.FC<Props> = ({ location }) => {
   };
 
   useEffect(() => {
-    if (location.lat && location.lng) {
-      loadEnvironmentalData();
-    }
-  }, [loadEnvironmentalData]);
+  if (location.lat && location.lng) {
+    loadEnvironmentalData();
+  }
+}, [loadEnvironmentalData, location.lat, location.lng]);
 
   if (data.loading) {
     return (
